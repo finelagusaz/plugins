@@ -179,6 +179,30 @@ if (isset($_POST['make_backup']))
 			if (!$dir)
 				message($lang_admin_plugin_backup['No directory']);
 
+			// Normalize and validate path to prevent directory traversal
+			$dir = realpath($dir);
+
+			// Prevent directory traversal outside forum root
+			$pun_root_real = realpath(PUN_ROOT);
+			if ($dir === false || strpos($dir, $pun_root_real) !== 0) {
+				generate_admin_menu($plugin);
+				message('Security: Backup directory must be within the forum installation path.');
+			}
+
+			// Prevent writing to sensitive system directories
+			$forbidden_dirs = array(
+				realpath(PUN_ROOT.'include'),
+				realpath(PUN_ROOT.'lang'),
+				realpath(PUN_ROOT.'plugins'),
+			);
+
+			foreach ($forbidden_dirs as $forbidden) {
+				if ($forbidden !== false && ($dir === $forbidden || strpos($dir, $forbidden.DIRECTORY_SEPARATOR) === 0)) {
+					generate_admin_menu($plugin);
+					message('Security: Cannot write backups to system directories.');
+				}
+			}
+
 			if (!is_dir($dir) || !is_writable($dir) || !rename(FORUM_CACHE_DIR.$filename, $dir.'/'.$filename))
 				message($lang_admin_plugin_backup['Unable to write']);
 

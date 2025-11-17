@@ -76,6 +76,21 @@ if (isset($_REQUEST['btnSubmit']))
 	}
 
 	if (!empty($user_ids)) {
+		// SERVER-SIDE CHECK: Prevent deletion of administrator accounts
+		$userids_check = "id IN (" . implode(',', $user_ids) . ")";
+		$result = $db->query('SELECT id, username FROM '.$db->prefix.'users WHERE '.$userids_check.' AND group_id=1');
+
+		if ($db->num_rows($result) > 0) {
+			$admin_names = array();
+			while ($row = $db->fetch_assoc($result)) {
+				$admin_names[] = $row['username'];
+			}
+			// Display the admin navigation menu before message
+			generate_admin_menu($plugin);
+			message('Cannot delete administrator accounts: '.implode(', ', $admin_names));
+		}
+
+		// Proceed with deletion
 		$userids = "id IN (" . implode(',', $user_ids) . ")";
 		$poster_ids = "poster_id IN (" . implode(',', $user_ids) . ")";
 		$db->query("DELETE FROM " . $db->prefix . 'posts WHERE ' . $poster_ids, true) or error('Unable to delete posts', __FILE__, __LINE__, $db->error());
