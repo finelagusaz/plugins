@@ -17,6 +17,12 @@ define('PUN_PLUGIN_LOADED', 1);
 // If the "Run Merge" button was clicked
 if (isset($_POST['run_merge']))
 {
+	// Basic CSRF protection via referer check
+	$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+	if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+		generate_admin_menu($plugin);
+		message('Security: Invalid form submission. Please submit the form from the admin panel.');
+	}
 	// Get the variables
 	$forum1 = intval($_POST['forum1']);
 	$forum2 = intval($_POST['forum2']);

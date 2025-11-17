@@ -21,6 +21,12 @@ require PUN_ROOT.'lang/'.$pun_user['language'].'/forum.php';
 
 if (isset($_POST['post']))
 {
+	// Basic CSRF protection via referer check
+	$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+	if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+		generate_admin_menu($plugin);
+		message('Security: Invalid form submission. Please submit the form from the admin panel.');
+	}
 	// Do Post
 	require PUN_ROOT.'include/search_idx.php';
 
@@ -66,6 +72,12 @@ if (isset($_POST['post']))
 }
 elseif (isset($_POST['update']))
 {
+	// Basic CSRF protection via referer check
+	$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+	if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+		generate_admin_menu($plugin);
+		message('Security: Invalid form submission. Please submit the form from the admin panel.');
+	}
 	if (empty($_POST['subject']) || empty($_POST['message']))
 		message('Missing Fields');
 

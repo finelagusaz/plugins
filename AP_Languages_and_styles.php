@@ -32,12 +32,24 @@ function RoundSigDigs($number, $sigdigs) {
 
 if (isset($_POST['lang']))
 {
+	// Basic CSRF protection via referer check
+	$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+	if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+		generate_admin_menu($plugin);
+		message('Security: Invalid form submission. Please submit the form from the admin panel.');
+	}
 	// Do Post
 	$db->query('UPDATE '.$db->prefix.'users SET language=\''.$db->escape($_POST['form']['language']).'\' WHERE id>1') or error('Unable to set lang settings', __FILE__, __LINE__, $db->error());
 	redirect('admin_loader.php?plugin=AP_Languages_and_styles.php', 'Languages Reset');
 }
 elseif (isset($_POST['style']))
 {
+	// Basic CSRF protection via referer check
+	$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+	if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+		generate_admin_menu($plugin);
+		message('Security: Invalid form submission. Please submit the form from the admin panel.');
+	}
 	// Do Post
 	$db->query('UPDATE '.$db->prefix.'users SET style=\''.$db->escape($_POST['form']['style']).'\' WHERE id>1') or error('Unable to set style settings', __FILE__, __LINE__, $db->error());
 	redirect('admin_loader.php?plugin=AP_Languages_and_styles.php', 'Styles Reset');

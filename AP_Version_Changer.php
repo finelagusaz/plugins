@@ -19,6 +19,12 @@ define('PUN_PLUGIN_LOADED', 1);
 
 if (isset($_POST['update_version']))
 {
+	// Basic CSRF protection via referer check
+	$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+	if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+		generate_admin_menu($plugin);
+		message('Security: Invalid form submission. Please submit the form from the admin panel.');
+	}
 	if (trim($_POST['to_version']) == '')
 	{
 		// Display the admin navigation menu

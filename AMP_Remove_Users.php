@@ -68,6 +68,11 @@ define('PUN_PLUGIN_LOADED', 1);
 	generate_admin_menu($plugin);
 if (isset($_REQUEST['btnSubmit']))
 {
+	// Basic CSRF protection via referer check
+	$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+	if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+		message('Security: Invalid form submission. Please submit the form from the admin panel.');
+	}
 	$user_ids = array();
 	foreach ($_REQUEST as $key => $value) {
 		if (substr($key,0,3) == 'chk') {

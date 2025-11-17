@@ -396,6 +396,12 @@ switch($db_type)
 }
 //Start actual db stuff
 if (isset($_POST['backupstart'])) {
+	// Basic CSRF protection via referer check
+	$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+	if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+		generate_admin_menu($plugin);
+		message('Security: Invalid form submission. Please submit the form from the admin panel.');
+	}
 	//output sql dump
 	$tables = array('bans', 'categories', 'censoring', 'config', 'forum_perms', 'forums', 'groups', 'online', 'posts', 'ranks', 'reports', 'search_cache', 'search_matches', 'search_words', 'subscriptions', 'topics', 'users');
 	$additional_tables = (isset($_POST['additional_tables'])) ? $_POST['additional_tables'] : ( (isset($_GET['additional_tables'])) ? $_GET['additional_tables'] : "" );
@@ -485,6 +491,12 @@ if (isset($_POST['backupstart'])) {
 exit;
 }
 elseif ( isset($_POST['restore_start']) ) {
+	// Basic CSRF protection via referer check
+	$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+	if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+		generate_admin_menu($plugin);
+		message('Security: Invalid form submission. Please submit the form from the admin panel.');
+	}
 	// Restore SQL Dump
 	//
 	// Handle the file upload ....
@@ -604,6 +616,12 @@ elseif ( isset($_POST['restore_start']) ) {
 	}
 }
 elseif (isset($_POST['repairall'])) {
+	// Basic CSRF protection via referer check
+	$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+	if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+		generate_admin_menu($plugin);
+		message('Security: Invalid form submission. Please submit the form from the admin panel.');
+	}
 	//repair all tables
 	// Retrieve table list:
 	$sql = 'SHOW TABLE STATUS';
@@ -639,6 +657,12 @@ elseif (isset($_POST['repairall'])) {
 	message('All tables repaired');
 }
 elseif (isset($_POST['optimizeall'])) {
+	// Basic CSRF protection via referer check
+	$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+	if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+		generate_admin_menu($plugin);
+		message('Security: Invalid form submission. Please submit the form from the admin panel.');
+	}
 	// Retrieve table list:
 	$sql = 'SHOW TABLE STATUS';
 	if (!$result = $db->query($sql))
@@ -682,6 +706,32 @@ elseif (isset($_POST['submit'])) {
 		generate_admin_menu( $plugin );
 		//no query error
 		message('No Query Duh!');
+	}
+
+	// SECURITY: Block dangerous SQL operations
+	$dangerous_patterns = array(
+		'/\bDROP\s+DATABASE\b/i' => 'DROP DATABASE',
+		'/\bDROP\s+TABLE\s+.*users/i' => 'DROP TABLE users',
+		'/\bDROP\s+TABLE\s+.*config/i' => 'DROP TABLE config',
+		'/\bGRANT\b/i' => 'GRANT',
+		'/\bREVOKE\b/i' => 'REVOKE',
+		'/\bCREATE\s+USER\b/i' => 'CREATE USER',
+		'/\bALTER\s+USER\b/i' => 'ALTER USER',
+		'/\bLOAD_FILE\b/i' => 'LOAD_FILE',
+		'/\bINTO\s+OUTFILE\b/i' => 'INTO OUTFILE',
+		'/\bINTO\s+DUMPFILE\b/i' => 'INTO DUMPFILE',
+	);
+
+	foreach ($dangerous_patterns as $pattern => $operation) {
+		if (preg_match($pattern, $this_query)) {
+			generate_admin_menu($plugin);
+			message('Security: The query contains a dangerous operation ('.$operation.'). For these operations, please use phpMyAdmin or database command line tools.');
+		}
+	}
+
+	// Log all SQL queries for audit trail
+	if (isset($pun_user['username'])) {
+		error_log('[DB_MANAGEMENT_PLUGIN] Admin "'.$pun_user['username'].'" executed: '.substr($this_query, 0, 200));
 	}
 	// Add a semi-colon to the end if there isn't one:
 	if ((!strrpos($this_query, ";")) || (substr($this_query, -1) != ';'))

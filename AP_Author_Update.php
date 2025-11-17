@@ -46,6 +46,12 @@ function update_post_author($post_id, $user_id, $username)
 
 if (isset($_POST['update_post']) || isset($_POST['update_user']))
 {
+	// Basic CSRF protection via referer check
+	$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+	if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+		generate_admin_menu($plugin);
+		message('Security: Invalid form submission. Please submit the form from the admin panel.');
+	}
 	if (isset($_POST['update_post']))
 	{
 		// Make sure post ids were entered
@@ -102,6 +108,12 @@ if (isset($_POST['update_post']) || isset($_POST['update_user']))
 }
 else if (isset($_POST['sync_post_counts']))
 {
+	// Basic CSRF protection via referer check
+	$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+	if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+		generate_admin_menu($plugin);
+		message('Security: Invalid form submission. Please submit the form from the admin panel.');
+	}
 	// Synchronize user post counts
 	$db->query('CREATE TEMPORARY TABLE IF NOT EXISTS '.$db->prefix.'post_counts SELECT poster_id, count(*) as new_num FROM '.$db->prefix.'posts GROUP BY poster_id') or error('Creating temporary table failed', __FILE__, __LINE__, $db->error());
 	$db->query('UPDATE '.$db->prefix.'users SET num_posts=0') or error('Could not reset post counts', __FILE__, __LINE__, $db->error()); // Zero posts

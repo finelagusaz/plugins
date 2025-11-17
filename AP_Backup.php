@@ -81,6 +81,12 @@ function escape_keyword($str)
 
 if (isset($_POST['make_backup']))
 {
+	// Basic CSRF protection via referer check
+	$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+	if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+		generate_admin_menu($plugin);
+		message('Security: Invalid form submission. Please submit the form from the admin panel.');
+	}
 	// Make sure something something was entered
 	if (!isset($_POST['method']) || ($_POST['method'] != 'download' && $_POST['method'] != 'filesystem' && $_POST['method'] != 'ftp'))
 		message($lang_common['Bad request']);

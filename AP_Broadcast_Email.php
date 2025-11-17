@@ -20,6 +20,12 @@ define('PUN_PLUGIN_LOADED', 1);
 
 if (isset($_POST['confirm']))
 {
+	// Basic CSRF protection via referer check
+	$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+	if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+		generate_admin_menu($plugin);
+		message('Security: Invalid form submission. Please submit the form from the admin panel.');
+	}
 	// Make sure message subject was entered
 	if (trim($_POST['message_subject']) == '')
 	{
@@ -108,6 +114,12 @@ if (isset($_POST['confirm']))
 
 else if (isset($_POST['send_message']))
 {
+	// Basic CSRF protection via referer check
+	$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+	if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+		generate_admin_menu($plugin);
+		message('Security: Invalid form submission. Please submit the form from the admin panel.');
+	}
 
 	require_once PUN_ROOT.'include/email.php';
 
