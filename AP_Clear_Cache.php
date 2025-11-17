@@ -40,7 +40,7 @@ if (isset($_POST['regen_all_cache']))
 		<div class="box">
 			<div class="inbox">
 				<p>Cache re-generated!</p>
-				<p><a href="javascript: history.go(-1)">Go back</a></p>
+				<p><a href="admin_loader.php?plugin=AP_Clear_Cache.php">Go back</a></p>
 			</div>
 		</div>
 	</div>
@@ -63,7 +63,7 @@ else if (isset($_POST['regen_ban_cache']))
 		<div class="box">
 			<div class="inbox">
 				<p>Ban cache re-generated!</p>
-				<p><a href="javascript: history.go(-1)">Go back</a></p>
+				<p><a href="admin_loader.php?plugin=AP_Clear_Cache.php">Go back</a></p>
 			</div>
 		</div>
 	</div>
@@ -71,7 +71,7 @@ else if (isset($_POST['regen_ban_cache']))
 
 }
 
-/ If the "Clear feed cache" button was clicked
+// If the "Clear feed cache" button was clicked
 else if (isset($_POST['clear_feed_cache']))
 {
 	// We re-generate it
@@ -86,7 +86,7 @@ else if (isset($_POST['clear_feed_cache']))
 		<div class="box">
 			<div class="inbox">
 				<p>Feed cache cleared!</p>
-				<p><a href="javascript: history.go(-1)">Go back</a></p>
+				<p><a href="admin_loader.php?plugin=AP_Clear_Cache.php">Go back</a></p>
 			</div>
 		</div>
 	</div>
@@ -109,7 +109,7 @@ else if (isset($_POST['regen_ranks_cache']))
 		<div class="box">
 			<div class="inbox">
 				<p>Ranks cache re-generated!</p>
-				<p><a href="javascript: history.go(-1)">Go back</a></p>
+				<p><a href="admin_loader.php?plugin=AP_Clear_Cache.php">Go back</a></p>
 			</div>
 		</div>
 	</div>
@@ -132,7 +132,7 @@ else if (isset($_POST['regen_config_cache']))
 		<div class="box">
 			<div class="inbox">
 				<p>Config cache re-generated!</p>
-				<p><a href="javascript: history.go(-1)">Go back</a></p>
+				<p><a href="admin_loader.php?plugin=AP_Clear_Cache.php">Go back</a></p>
 			</div>
 		</div>
 	</div>
@@ -155,7 +155,7 @@ else if (isset($_POST['regen_jump_cache']))
 		<div class="box">
 			<div class="inbox">
 				<p>Quickjump cache re-generated!</p>
-				<p><a href="javascript: history.go(-1)">Go back</a></p>
+				<p><a href="admin_loader.php?plugin=AP_Clear_Cache.php">Go back</a></p>
 			</div>
 		</div>
 	</div>
@@ -174,7 +174,7 @@ else	// If not, we show the form
 			<div class="inbox">
 				<p>This plugin allows you to easily and simply re-generate your FluxBB cache files</p>
 
-				<form id="regenerate" method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>&amp;foo=bar">
+				<form id="regenerate" method="post" action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>&amp;foo=bar">
 					<p><input type="submit" name="regen_all_cache" value="Regenerate all cache files" tabindex="2" /></p>
 					<p><input type="submit" name="regen_ban_cache" value="Regenerate ban cache" tabindex="3" /></p>
 <?php

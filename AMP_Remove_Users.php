@@ -68,16 +68,19 @@ define('PUN_PLUGIN_LOADED', 1);
 	generate_admin_menu($plugin);
 if (isset($_REQUEST['btnSubmit']))
 {
-	$userids = "";
+	$user_ids = array();
 	foreach ($_REQUEST as $key => $value) {
 		if (substr($key,0,3) == 'chk') {
-			if (strlen($userids) == 0) $userids .= "id = "; else $userids .=  " OR id = ";
-			$userids .= substr($key,3,strlen($key));
+			$user_ids[] = intval(substr($key,3));
 		}
 	}
 
-	$db->query("DELETE FROM " . $db->prefix . 'posts WHERE ' . str_replace("id","poster_id",$userids) .";", true) or error('Unable to delete users', __FILE__, __LINE__, $db->error());
-	$result = $db->query("DELETE FROM " . $db->prefix . 'users WHERE ' .$userids . ";", true) or error('Unable to delete users', __FILE__, __LINE__, $db->error());
+	if (!empty($user_ids)) {
+		$userids = "id IN (" . implode(',', $user_ids) . ")";
+		$poster_ids = "poster_id IN (" . implode(',', $user_ids) . ")";
+		$db->query("DELETE FROM " . $db->prefix . 'posts WHERE ' . $poster_ids, true) or error('Unable to delete posts', __FILE__, __LINE__, $db->error());
+		$result = $db->query("DELETE FROM " . $db->prefix . 'users WHERE ' . $userids, true) or error('Unable to delete users', __FILE__, __LINE__, $db->error());
+	}
 
 
 	$users_pruned = $db->affected_rows();
@@ -108,7 +111,7 @@ else	// If not, we show the "Show text" form
 //	generate_admin_menu($plugin);
 
 ?>
-<script language="javascript">
+<script type="text/javascript">
 	checked = false;
 	function SelectAll() {
 		if (checked == false){checked = true}else{checked = false}
@@ -140,7 +143,7 @@ else	// If not, we show the "Show text" form
 
 		<h2 class="block2">Manage</h2>
 		<div class="box">
-			<form id="removeusersform" method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>" onsubmit="return confirm('Are you sure you want to remove these users along with their posts?')">
+			<form id="removeusersform" method="post" action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>" onsubmit="return confirm('Are you sure you want to remove these users along with their posts?')">
 				<div class="inform">
 <table cellpadding="0" cellspacing="1" border="0" style="width:500px">
 <tr><th >Username</th><th style="width:50px;">Posts #</th></th><th>Email</th><th style="width:30px"><input type='checkbox' onclick="SelectAll()" id="chkSelectAll"></th></tr>
@@ -159,8 +162,8 @@ else	// If not, we show the "Show text" form
 				$cnt = 0;
 			}
 			if ($cur_dupe['username'] == "Guest") continue;
-			if ($cur_dupe['group_id'] == 1) $chk = ""; else $chk = "<input type='checkbox' name='chk{$cur_dupe['id']}'  id='chk{$cur_dupe['id']}' onclick='EnableSubmit(1);'>";
-			echo "<tr bgcolor='$col' width='200'><td>" . $cur_dupe['username'] . "</td><td align='center'>" . $cur_dupe['num_posts'] . "</td><td>" . $cur_dupe['email'] . "</td><td align='center'>$chk</td></tr>";
+			if ($cur_dupe['group_id'] == 1) $chk = ""; else $chk = "<input type='checkbox' name='chk".intval($cur_dupe['id'])."'  id='chk".intval($cur_dupe['id'])."' onclick='EnableSubmit(1);'>";
+			echo "<tr bgcolor='$col' width='200'><td>" . pun_htmlspecialchars($cur_dupe['username']) . "</td><td align='center'>" . intval($cur_dupe['num_posts']) . "</td><td>" . pun_htmlspecialchars($cur_dupe['email']) . "</td><td align='center'>$chk</td></tr>";
 			}
 	}
 ?>

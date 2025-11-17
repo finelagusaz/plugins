@@ -44,7 +44,7 @@ else
 	<div id="exampleplugin" class="plugin blockform">
 		<h2><span>Version Changer</span></h2>
 		<div class="box">
-			<form method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>&amp;foo=bar">
+			<form method="post" action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>&amp;foo=bar">
 				<div class="inform">
 					<fieldset>
 						<legend>Enter a version number and hit "Update"</legend>

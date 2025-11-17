@@ -22,9 +22,19 @@ if (isset($_POST['cleanup']))
 {
     //delete all users and posts from specified ips, then perform all other cleanup tasks except resetting post counts since that might not be needed or wanted.
     @set_time_limit(0);
-    $ip = "'".implode("','", array_values(explode(' ', $_POST['ip_addys'])))."'";
-    $db->query('DELETE FROM '.$db->prefix.'posts WHERE poster_ip IN('.$ip.')') or error('Could not delete posts', __FILE__, __LINE__, $db->error());
-    $db->query('DELETE FROM '.$db->prefix.'users WHERE registration_ip IN('.$ip.')') or error('Could not delete users', __FILE__, __LINE__, $db->error());
+    $ip_addrs = explode(' ', trim($_POST['ip_addys']));
+    $escaped_ips = array();
+    foreach ($ip_addrs as $ip) {
+        $ip = trim($ip);
+        if (filter_var($ip, FILTER_VALIDATE_IP) || preg_match('/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/', $ip)) {
+            $escaped_ips[] = "'".$db->escape($ip)."'";
+        }
+    }
+    if (!empty($escaped_ips)) {
+        $ip = implode(',', $escaped_ips);
+        $db->query('DELETE FROM '.$db->prefix.'posts WHERE poster_ip IN('.$ip.')') or error('Could not delete posts', __FILE__, __LINE__, $db->error());
+        $db->query('DELETE FROM '.$db->prefix.'users WHERE registration_ip IN('.$ip.')') or error('Could not delete users', __FILE__, __LINE__, $db->error());
+    }
     $db->query('CREATE TEMPORARY TABLE IF NOT EXISTS '.$db->prefix.'forum_posts SELECT t.forum_id, count(*) as posts FROM '.$db->prefix.'posts as p LEFT JOIN '.$db->prefix.'topics as t on p.topic_id=t.id GROUP BY t.forum_id') or error('Creating posts table failed', __FILE__, __LINE__, $db->error());
     $db->query('UPDATE '.$db->prefix.'forums, '.$db->prefix.'forum_posts SET num_posts=posts WHERE id=forum_id') or error('Could not update post counts', __FILE__, __LINE__, $db->error());
     $db->query('CREATE TEMPORARY TABLE IF NOT EXISTS '.$db->prefix.'forum_topics SELECT forum_id, count(*) as topics FROM '.$db->prefix.'topics GROUP BY forum_id') or error('Creating topics table failed', __FILE__, __LINE__, $db->error());
@@ -112,7 +122,7 @@ else
     </div>
     <h2 class="block2"><span>Complete spam cleanup</span></h2>
     <div class="box">
-        <form method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
+        <form method="post" action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
             <div class="inform">
                 <fieldset>
                     <legend>Complete spam cleanup</legend>
@@ -140,7 +150,7 @@ else
     </div>
     <h2 class="block2"><span>Synchronise forum post/topic counts</span></h2>
     <div class="box">
-        <form method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
+        <form method="post" action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
             <div class="inform">
                 <fieldset>
                     <legend>Synchronise forum post/topic counts</legend>
@@ -160,7 +170,7 @@ else
     </div>
     <h2 class="block2"><span>Synchronise topic reply counts</span></h2>
     <div class="box">
-        <form method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
+        <form method="post" action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
             <div class="inform">
                 <fieldset>
                     <legend>Synchronise topic reply counts</legend>
@@ -180,7 +190,7 @@ else
     </div>
     <h2 class="block2"><span>Synchronise user post counts</span></h2>
     <div class="box">
-        <form method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
+        <form method="post" action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
             <div class="inform">
                 <fieldset>
                     <legend>Synchronise user post counts</legend>
@@ -200,7 +210,7 @@ else
     </div>
     <h2 class="block2"><span>Synchronise forum last post</span></h2>
     <div class="box">
-        <form method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
+        <form method="post" action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
             <div class="inform">
                 <fieldset>
                     <legend>Synchronise forum last post</legend>
@@ -220,7 +230,7 @@ else
     </div>
     <h2 class="block2"><span>Synchronise topic last post</span></h2>
     <div class="box">
-        <form method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
+        <form method="post" action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
             <div class="inform">
                 <fieldset>
                     <legend>Synchronise topic last post</legend>
@@ -240,7 +250,7 @@ else
     </div>
     <h2 class="block2"><span>Delete orphans</span></h2>
     <div class="box">
-        <form method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
+        <form method="post" action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
             <div class="inform">
                 <fieldset>
                     <legend>Delete orphans</legend>

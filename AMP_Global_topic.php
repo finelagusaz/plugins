@@ -45,7 +45,7 @@ if (isset($_POST['post']))
 	{
 		$db->query('INSERT INTO '.$db->prefix.'topics (poster, subject, posted, last_post, last_poster, forum_id, sticky, closed)
 			VALUES(\''.$db->escape($pun_user['username']).'\', \''.$db->escape($_POST['subject']).'\', '.$now.', '.$now.',
-			       \''.$db->escape($pun_user['username']).'\', '.$_POST['forums'][$i].', '.$_POST['sticky'].', '.$_POST['close'].')')
+			       \''.$db->escape($pun_user['username']).'\', '.intval($_POST['forums'][$i]).', '.intval($_POST['sticky']).', '.intval($_POST['close']).')')
 			or error('Unable to create topic', __FILE__, __LINE__, $db->error());
 		$new_tid = $db->insert_id();
 
@@ -58,7 +58,7 @@ if (isset($_POST['post']))
 		$db->query('UPDATE '.$db->prefix.'topics SET last_post_id='.$new_pid.' WHERE id='.$new_tid) or error('Unable to update topic', __FILE__, __LINE__, $db->error());
 
 		update_search_index('post', $new_pid, $_POST['message'], $_POST['subject']);
-		update_forum($_POST['forums'][$i]);
+		update_forum(intval($_POST['forums'][$i]));
 		$i++;
 	}
 
@@ -72,11 +72,11 @@ elseif (isset($_POST['update']))
 	$_POST['message'] = pun_linebreaks(pun_trim($_POST['message']));
 
 	$db->query('UPDATE '.$db->prefix.'topics SET subject=\''.$db->escape($_POST['subject']).'\'
-		WHERE subject=\''.$db->escape($_POST['old_subject']).'\' AND posted='.$db->escape($_POST['old_posted']))
+		WHERE subject=\''.$db->escape($_POST['old_subject']).'\' AND posted='.intval($_POST['old_posted']))
 		or error('Unable to update topic', __FILE__, __LINE__, $db->error());
 
 	$result = $db->query('SELECT p.id FROM '.$db->prefix.'posts as p LEFT JOIN '.$db->prefix.'topics as t ON t.id=p.topic_id
-		WHERE t.subject=\''.$db->escape($_POST['subject']).'\' AND t.posted='.$db->escape($_POST['old_posted']))
+		WHERE t.subject=\''.$db->escape($_POST['subject']).'\' AND t.posted='.intval($_POST['old_posted']))
 		or error('Unable to get post ids', __FILE__, __LINE__, $db->error());
 
 	while ($cur_post = $db->fetch_assoc($result))
@@ -89,27 +89,27 @@ elseif (isset($_GET['action'])) //looks like we're doing something to a global t
 	switch ($_GET['action'])
 	{
 		case 'delete':
-			$db->query('DELETE FROM '.$db->prefix.'topics WHERE subject=\''.$db->escape($_GET['subject']).'\' AND posted=\''.$db->escape($_GET['posted']).'\'')
+			$db->query('DELETE FROM '.$db->prefix.'topics WHERE subject=\''.$db->escape($_GET['subject']).'\' AND posted='.intval($_GET['posted']))
 				or error('Unable to delete topic', __FILE__, __LINE__, $db->error());
 			redirect('admin_loader.php?plugin=AMP_Global_topic.php', 'Topic(s) Removed');
 		break;
 		case 'stick':
-			$db->query('UPDATE '.$db->prefix.'topics SET sticky=1 WHERE subject=\''.$db->escape($_GET['subject']).'\' AND posted=\''.$db->escape($_GET['posted']).'\'')
+			$db->query('UPDATE '.$db->prefix.'topics SET sticky=1 WHERE subject=\''.$db->escape($_GET['subject']).'\' AND posted='.intval($_GET['posted']))
 				or error('Unable to update topic', __FILE__, __LINE__, $db->error());
 			redirect('admin_loader.php?plugin=AMP_Global_topic.php', 'Topic(s) Stuck');
 		break;
 		case 'unstick':
-			$db->query('UPDATE '.$db->prefix.'topics SET sticky=0 WHERE subject=\''.$db->escape($_GET['subject']).'\' AND posted=\''.$db->escape($_GET['posted']).'\'')
+			$db->query('UPDATE '.$db->prefix.'topics SET sticky=0 WHERE subject=\''.$db->escape($_GET['subject']).'\' AND posted='.intval($_GET['posted']))
 				or error('Unable to update topic', __FILE__, __LINE__, $db->error());
 			redirect('admin_loader.php?plugin=AMP_Global_topic.php', 'Topic(s) Unstuck');
 		break;
 		case 'open':
-			$db->query('UPDATE '.$db->prefix.'topics SET closed=0 WHERE subject=\''.$db->escape($_GET['subject']).'\' AND posted=\''.$db->escape($_GET['posted']).'\'')
+			$db->query('UPDATE '.$db->prefix.'topics SET closed=0 WHERE subject=\''.$db->escape($_GET['subject']).'\' AND posted='.intval($_GET['posted']))
 				or error('Unable to update topic', __FILE__, __LINE__, $db->error());
 			redirect('admin_loader.php?plugin=AMP_Global_topic.php', 'Topic(s) Opened');
 		break;
 		case 'close':
-			$db->query('UPDATE '.$db->prefix.'topics SET closed=1 WHERE subject=\''.$db->escape($_GET['subject']).'\' AND posted=\''.$db->escape($_GET['posted']).'\'')
+			$db->query('UPDATE '.$db->prefix.'topics SET closed=1 WHERE subject=\''.$db->escape($_GET['subject']).'\' AND posted='.intval($_GET['posted']))
 				or error('Unable to update topic', __FILE__, __LINE__, $db->error());
 			redirect('admin_loader.php?plugin=AMP_Global_topic.php', 'Topic(s) Closed');
 		break;
@@ -117,16 +117,16 @@ elseif (isset($_GET['action'])) //looks like we're doing something to a global t
 			// Display the admin navigation menu
 			generate_admin_menu($plugin);
 			$result = $db->query('SELECT p.message FROM '.$db->prefix.'posts as p LEFT JOIN '.$db->prefix.'topics as t ON t.id=p.topic_id
-				WHERE t.subject=\''.$db->escape($_GET['subject']).'\' AND t.posted=\''.$db->escape($_GET['posted']).'\' LIMIT 0,1', true)
+				WHERE t.subject=\''.$db->escape($_GET['subject']).'\' AND t.posted='.intval($_GET['posted']).' LIMIT 0,1', true)
 				or error('Unable to fetch post info', __FILE__, __LINE__, $db->error());
 			$cur_post = $db->fetch_assoc($result);
 ?>
 	<div class="blockform">
 		<h2><span>Edit Topic</span></h2>
 		<div class="box">
-			<form id="post" method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
-			<input type="hidden" name="old_subject" value="<?php echo $_GET['subject'] ?>" />
-			<input type="hidden" name="old_posted" value="<?php echo $_GET['posted'] ?>" />
+			<form id="post" method="post" action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
+			<input type="hidden" name="old_subject" value="<?php echo pun_htmlspecialchars($_GET['subject']) ?>" />
+			<input type="hidden" name="old_posted" value="<?php echo intval($_GET['posted']) ?>" />
 				<div class="inform">
 					<fieldset>
 						<legend>Post Settings</legend>
@@ -135,7 +135,7 @@ elseif (isset($_GET['action'])) //looks like we're doing something to a global t
 							<tr>
 								<th scope="row">Subject</th>
 								<td>
-									<input type="text" name="subject" size="60" maxlength="70" tabindex="1" value="<?php echo $_GET['subject'] ?>" />
+									<input type="text" name="subject" size="60" maxlength="70" tabindex="1" value="<?php echo pun_htmlspecialchars($_GET['subject']) ?>" />
 									<span>The subject of the topic.</span>
 								</td>
 							</tr>
@@ -174,7 +174,7 @@ else	// If not, we show the form
 
 		<h2 class="block2"><span>Add Topic</span></h2>
 		<div class="box">
-			<form id="post" method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
+			<form id="post" method="post" action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
 				<div class="inform">
 					<fieldset>
 						<legend>Post Settings</legend>
@@ -290,7 +290,7 @@ if ($db->num_rows($resultg))
 						</th>
 					</tr>
 <?php
-		$result = $db->query('SELECT t.id, t.poster, t.subject, t.posted, t.last_post, t.last_post_id, t.last_poster, t.num_views, t.num_replies, t.closed, t.sticky, t.moved_to, t.forum_id, f.forum_name FROM '.$db->prefix.'topics as t LEFT JOIN '.$db->prefix.'forums as f ON t.forum_id=f.id WHERE subject=\''.$db->escape($cur_global['subject']).'\' AND posted='.$db->escape($cur_global['posted']).' ORDER BY sticky DESC, '.(($cur_forum['sort_by'] == '1') ? 'posted' : 'last_post').' DESC LIMIT 0, 50') or error('Unable to get topics', __FILE__, __LINE__, $db->error());
+		$result = $db->query('SELECT t.id, t.poster, t.subject, t.posted, t.last_post, t.last_post_id, t.last_poster, t.num_views, t.num_replies, t.closed, t.sticky, t.moved_to, t.forum_id, f.forum_name FROM '.$db->prefix.'topics as t LEFT JOIN '.$db->prefix.'forums as f ON t.forum_id=f.id WHERE subject=\''.$db->escape($cur_global['subject']).'\' AND posted='.intval($cur_global['posted']).' ORDER BY sticky DESC, '.(($cur_forum['sort_by'] == '1') ? 'posted' : 'last_post').' DESC LIMIT 0, 50') or error('Unable to get topics', __FILE__, __LINE__, $db->error());
 
 		while ($cur_topic = $db->fetch_assoc($result))
 		{

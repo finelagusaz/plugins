@@ -61,7 +61,7 @@ if (isset($_POST['confirm']))
 	<div class="blockform">
 		<h2 class="block2"><span>Confirm Message</span></h2>
 		<div class="box">
-			<form id="broadcastemail" method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
+			<form id="broadcastemail" method="post" action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
 				<div class="inform">
 					<input type="hidden" name="message_subject" value="<?php echo pun_htmlspecialchars($_POST['message_subject']) ?>" />
 					<input type="hidden" name="message_body" value="<?php echo pun_htmlspecialchars($_POST['message_body']) ?>" />
@@ -178,7 +178,7 @@ else
  	<div class="blockform">
 		<h2 class="block2"><span>Compose Message</span></h2>
 		<div class="box">
-			<form id="broadcastemail" method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
+			<form id="broadcastemail" method="post" action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
 				<div class="inform">
 					<fieldset>
 						<legend>Message Contents</legend>

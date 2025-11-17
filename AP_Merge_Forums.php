@@ -103,7 +103,7 @@ else	// If not, we show the "Show text" form
 	<div class="blockform">
 		<h2 class="block2"><span>Merge Forums</span></h2>
 		<div class="box">
-			<form id="merge" method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
+			<form id="merge" method="post" action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
 				<div class="inform">
 					<fieldset>
 						<legend>Select the forum you want and the one you want to merge to.</legend>
