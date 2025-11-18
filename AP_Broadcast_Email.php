@@ -20,6 +20,12 @@ define('PUN_PLUGIN_LOADED', 1);
 
 if (isset($_POST['confirm']))
 {
+	// Basic CSRF protection via referer check
+	$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+	if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+		generate_admin_menu($plugin);
+		message('Security: Invalid form submission. Please submit the form from the admin panel.');
+	}
 	// Make sure message subject was entered
 	if (trim($_POST['message_subject']) == '')
 	{
@@ -61,7 +67,7 @@ if (isset($_POST['confirm']))
 	<div class="blockform">
 		<h2 class="block2"><span>Confirm Message</span></h2>
 		<div class="box">
-			<form id="broadcastemail" method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
+			<form id="broadcastemail" method="post" action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
 				<div class="inform">
 					<input type="hidden" name="message_subject" value="<?php echo pun_htmlspecialchars($_POST['message_subject']) ?>" />
 					<input type="hidden" name="message_body" value="<?php echo pun_htmlspecialchars($_POST['message_body']) ?>" />
@@ -108,6 +114,12 @@ if (isset($_POST['confirm']))
 
 else if (isset($_POST['send_message']))
 {
+	// Basic CSRF protection via referer check
+	$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+	if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+		generate_admin_menu($plugin);
+		message('Security: Invalid form submission. Please submit the form from the admin panel.');
+	}
 
 	require_once PUN_ROOT.'include/email.php';
 
@@ -178,7 +190,7 @@ else
  	<div class="blockform">
 		<h2 class="block2"><span>Compose Message</span></h2>
 		<div class="box">
-			<form id="broadcastemail" method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
+			<form id="broadcastemail" method="post" action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
 				<div class="inform">
 					<fieldset>
 						<legend>Message Contents</legend>

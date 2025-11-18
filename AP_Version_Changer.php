@@ -19,6 +19,12 @@ define('PUN_PLUGIN_LOADED', 1);
 
 if (isset($_POST['update_version']))
 {
+	// Basic CSRF protection via referer check
+	$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+	if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+		generate_admin_menu($plugin);
+		message('Security: Invalid form submission. Please submit the form from the admin panel.');
+	}
 	if (trim($_POST['to_version']) == '')
 	{
 		// Display the admin navigation menu
@@ -44,7 +50,7 @@ else
 	<div id="exampleplugin" class="plugin blockform">
 		<h2><span>Version Changer</span></h2>
 		<div class="box">
-			<form method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>&amp;foo=bar">
+			<form method="post" action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>&amp;foo=bar">
 				<div class="inform">
 					<fieldset>
 						<legend>Enter a version number and hit "Update"</legend>

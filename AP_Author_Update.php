@@ -29,16 +29,16 @@ function update_post_author($post_id, $user_id, $username)
 	$topic_post_id = $db->result($result);
 
 	// Update post
-	$db->query('UPDATE '.$db->prefix.'posts SET poster=\''.$username.'\', '.'poster_id='.$user_id.' WHERE id = '.$post_id) or error('Unable to update post info', __FILE__, __LINE__, $db->error());
+	$db->query('UPDATE '.$db->prefix.'posts SET poster=\''.$db->escape($username).'\', '.'poster_id='.$user_id.' WHERE id = '.$post_id) or error('Unable to update post info', __FILE__, __LINE__, $db->error());
 	if ($db->affected_rows($result) < 1)
 		return 0;
 
 	// Try to update "topic post"
 	if ($post_id == $topic_post_id)
-		$db->query('UPDATE '.$db->prefix.'topics SET poster = \''.$username.'\' WHERE id = '.$topic_id) or error('Unable to update topic info', __FILE__, __LINE__, $db->error());
+		$db->query('UPDATE '.$db->prefix.'topics SET poster = \''.$db->escape($username).'\' WHERE id = '.$topic_id) or error('Unable to update topic info', __FILE__, __LINE__, $db->error());
 
 	// Try to update last_poster
-	$db->query('UPDATE '.$db->prefix.'topics SET last_poster = \''.$username.'\' WHERE last_post_id = '.$post_id) or error('Unable to update topic info', __FILE__, __LINE__, $db->error());
+	$db->query('UPDATE '.$db->prefix.'topics SET last_poster = \''.$db->escape($username).'\' WHERE last_post_id = '.$post_id) or error('Unable to update topic info', __FILE__, __LINE__, $db->error());
 
 	return 1;
 }
@@ -46,6 +46,12 @@ function update_post_author($post_id, $user_id, $username)
 
 if (isset($_POST['update_post']) || isset($_POST['update_user']))
 {
+	// Basic CSRF protection via referer check
+	$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+	if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+		generate_admin_menu($plugin);
+		message('Security: Invalid form submission. Please submit the form from the admin panel.');
+	}
 	if (isset($_POST['update_post']))
 	{
 		// Make sure post ids were entered
@@ -102,6 +108,12 @@ if (isset($_POST['update_post']) || isset($_POST['update_user']))
 }
 else if (isset($_POST['sync_post_counts']))
 {
+	// Basic CSRF protection via referer check
+	$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+	if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+		generate_admin_menu($plugin);
+		message('Security: Invalid form submission. Please submit the form from the admin panel.');
+	}
 	// Synchronize user post counts
 	$db->query('CREATE TEMPORARY TABLE IF NOT EXISTS '.$db->prefix.'post_counts SELECT poster_id, count(*) as new_num FROM '.$db->prefix.'posts GROUP BY poster_id') or error('Creating temporary table failed', __FILE__, __LINE__, $db->error());
 	$db->query('UPDATE '.$db->prefix.'users SET num_posts=0') or error('Could not reset post counts', __FILE__, __LINE__, $db->error()); // Zero posts
@@ -134,7 +146,7 @@ generate_admin_menu($plugin);
 		<h2><span>Author Update - v2.1</span></h2>
 		<div class="box">
 			<div class="inbox">
-				<form method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
+				<form method="post" action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
 					<p>This plugin modifies the author of one or more posts.
 					<input type="submit" style="float: right;" tabindex="1" <?php
 						echo (isset($_POST['menu'])) ? 'name="menu_" value="Use Text Fields"' : 'name="menu" value="Use Menus"'; ?> />
@@ -147,7 +159,7 @@ generate_admin_menu($plugin);
 	<div class="blockform">
 		<h2 class="block2"><span>Individual Posts</span></h2>
 		<div class="box">
-			<form method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
+			<form method="post" action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
 				<div class="inform">
 					<fieldset>
 						<legend>IDs</legend>
@@ -173,7 +185,7 @@ generate_admin_menu($plugin);
 	<div class="blockform">
 		<h2 class="block2"><span>All Posts by Certain User</span></h2>
 		<div class="box">
-			<form method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
+			<form method="post" action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
 				<div class="inform">
 					<fieldset>
 						<legend>IDs</legend>
@@ -199,7 +211,7 @@ generate_admin_menu($plugin);
 	<div class="blockform">
 		<h2 class="block2"><span>Synchronize User Post Counts</span></h2>
 		<div class="box">
-			<form method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
+			<form method="post" action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
 				<p class="submitend"><input type="submit" name="sync_post_counts" value="Synchronize" /></p>
 			</form>
 		</div>

@@ -56,6 +56,9 @@ if (!defined('PUN'))
 	exit;
 
 // Load the admin_plugin_example.php language file
+// Validate admin_language to prevent directory traversal
+if (!preg_match('/^[a-zA-Z_]+$/', $admin_language))
+	$admin_language = 'English';
 require PUN_ROOT.'lang/'.$admin_language.'/admin_plugin_example.php';
 
 // Tell admin_loader.php that this is indeed a plugin and that it is loaded
@@ -81,7 +84,7 @@ if (isset($_POST['show_text']))
 		<div class="box">
 			<div class="inbox">
 				<p><?php printf($lang_admin_plugin_example['You said'], pun_htmlspecialchars($_POST['text_to_show'])) ?></p>
-				<p><a href="javascript: history.go(-1)"><?php echo $lang_admin_common['Go back'] ?></a></p>
+				<p><a href="admin_loader.php?plugin=AMP_Example.php"><?php echo $lang_admin_common['Go back'] ?></a></p>
 			</div>
 		</div>
 	</div>

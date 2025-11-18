@@ -127,7 +127,7 @@ function get_table_def_mysql($table, $crlf)
 	//
 	// Drop the last ',$crlf' off ;)
 	//
-	$schema_create = ereg_replace(',' . $crlf . '$', "", $schema_create);
+	$schema_create = preg_replace('/' . preg_quote($crlf, '/') . '$/', "", $schema_create);
 
 	//
 	// Get any Indexed fields from the database...
@@ -154,34 +154,29 @@ function get_table_def_mysql($table, $crlf)
 		$index[$kname][] = $row['Column_name'];
 	}
 
-	while(list($x, $columns) = @each($index))
-	{
-		$schema_create .= ", $crlf";
+	if (isset($index) && is_array($index)) {
+		foreach($index as $x => $columns)
+		{
+			$schema_create .= ", $crlf";
 
-		if($x == 'PRIMARY')
-		{
-			$schema_create .= '	PRIMARY KEY (' . implode($columns, ', ') . ')';
-		}
-		elseif (substr($x,0,6) == 'UNIQUE')
-		{
-			$schema_create .= '	UNIQUE ' . substr($x,7) . ' (' . implode($columns, ', ') . ')';
-		}
-		else
-		{
-			$schema_create .= "	KEY $x (" . implode($columns, ', ') . ')';
+			if($x == 'PRIMARY')
+			{
+				$schema_create .= '	PRIMARY KEY (' . implode($columns, ', ') . ')';
+			}
+			elseif (substr($x,0,6) == 'UNIQUE')
+			{
+				$schema_create .= '	UNIQUE ' . substr($x,7) . ' (' . implode($columns, ', ') . ')';
+			}
+			else
+			{
+				$schema_create .= "	KEY $x (" . implode($columns, ', ') . ')';
+			}
 		}
 	}
 
 	$schema_create .= "$crlf);";
 
-	if(get_magic_quotes_runtime())
-	{
-		return(stripslashes($schema_create));
-	}
-	else
-	{
-		return($schema_create);
-	}
+	return($schema_create);
 
 } // End get_table_def_mysql
 
@@ -401,17 +396,23 @@ switch($db_type)
 }
 //Start actual db stuff
 if (isset($_POST['backupstart'])) {
+	// Basic CSRF protection via referer check
+	$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+	if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+		generate_admin_menu($plugin);
+		message('Security: Invalid form submission. Please submit the form from the admin panel.');
+	}
 	//output sql dump
 	$tables = array('bans', 'categories', 'censoring', 'config', 'forum_perms', 'forums', 'groups', 'online', 'posts', 'ranks', 'reports', 'search_cache', 'search_matches', 'search_words', 'subscriptions', 'topics', 'users');
-	$additional_tables = (isset($_POST['additional_tables'])) ? $_POST['additional_tables'] : ( (isset($HTTP_GET_VARS['additional_tables'])) ? $HTTP_GET_VARS['additional_tables'] : "" );
-	$backup_type = (isset($_POST['backup_type'])) ? $_POST['backup_type'] : ( (isset($HTTP_GET_VARS['backup_type'])) ? $HTTP_GET_VARS['backup_type'] : "" );
-	$gzipcompress = (!empty($_POST['gzipcompress'])) ? $_POST['gzipcompress'] : ( (!empty($HTTP_GET_VARS['gzipcompress'])) ? $HTTP_GET_VARS['gzipcompress'] : 0 );
-	$drop = (!empty($_POST['drop'])) ? intval($_POST['drop']) : ( (!empty($HTTP_GET_VARS['drop'])) ? intval($HTTP_GET_VARS['drop']) : 0 );
+	$additional_tables = (isset($_POST['additional_tables'])) ? $_POST['additional_tables'] : ( (isset($_GET['additional_tables'])) ? $_GET['additional_tables'] : "" );
+	$backup_type = (isset($_POST['backup_type'])) ? $_POST['backup_type'] : ( (isset($_GET['backup_type'])) ? $_GET['backup_type'] : "" );
+	$gzipcompress = (!empty($_POST['gzipcompress'])) ? $_POST['gzipcompress'] : ( (!empty($_GET['gzipcompress'])) ? $_GET['gzipcompress'] : 0 );
+	$drop = (!empty($_POST['drop'])) ? intval($_POST['drop']) : ( (!empty($_GET['drop'])) ? intval($_GET['drop']) : 0 );
 	if(!empty($additional_tables))
 	{
-		if(ereg(",", $additional_tables))
+		if(strpos($additional_tables, ',') !== false)
 		{
-			$additional_tables = split(",", $additional_tables);
+			$additional_tables = explode(",", $additional_tables);
 			for($i = 0; $i < count($additional_tables); $i++)
 				{
 					$tables[] = trim($additional_tables[$i]);
@@ -490,14 +491,20 @@ if (isset($_POST['backupstart'])) {
 exit;
 }
 elseif ( isset($_POST['restore_start']) ) {
+	// Basic CSRF protection via referer check
+	$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+	if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+		generate_admin_menu($plugin);
+		message('Security: Invalid form submission. Please submit the form from the admin panel.');
+	}
 	// Restore SQL Dump
 	//
 	// Handle the file upload ....
 	// If no file was uploaded report an error...
 	//
-	$backup_file_name = (!empty($HTTP_POST_FILES['backup_file']['name'])) ? $HTTP_POST_FILES['backup_file']['name'] : "";
-	$backup_file_tmpname = ($HTTP_POST_FILES['backup_file']['tmp_name'] != "none") ? $HTTP_POST_FILES['backup_file']['tmp_name'] : "";
-	$backup_file_type = (!empty($HTTP_POST_FILES['backup_file']['type'])) ? $HTTP_POST_FILES['backup_file']['type'] : "";
+	$backup_file_name = (!empty($_FILES['backup_file']['name'])) ? $_FILES['backup_file']['name'] : "";
+	$backup_file_tmpname = (isset($_FILES['backup_file']['tmp_name']) && $_FILES['backup_file']['tmp_name'] != "none") ? $_FILES['backup_file']['tmp_name'] : "";
+	$backup_file_type = (!empty($_FILES['backup_file']['type'])) ? $_FILES['backup_file']['type'] : "";
 	if($backup_file_tmpname == "" || $backup_file_name == "")
 	{
 		// Display the admin navigation menu
@@ -609,6 +616,12 @@ elseif ( isset($_POST['restore_start']) ) {
 	}
 }
 elseif (isset($_POST['repairall'])) {
+	// Basic CSRF protection via referer check
+	$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+	if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+		generate_admin_menu($plugin);
+		message('Security: Invalid form submission. Please submit the form from the admin panel.');
+	}
 	//repair all tables
 	// Retrieve table list:
 	$sql = 'SHOW TABLE STATUS';
@@ -644,6 +657,12 @@ elseif (isset($_POST['repairall'])) {
 	message('All tables repaired');
 }
 elseif (isset($_POST['optimizeall'])) {
+	// Basic CSRF protection via referer check
+	$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+	if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+		generate_admin_menu($plugin);
+		message('Security: Invalid form submission. Please submit the form from the admin panel.');
+	}
 	// Retrieve table list:
 	$sql = 'SHOW TABLE STATUS';
 	if (!$result = $db->query($sql))
@@ -687,6 +706,32 @@ elseif (isset($_POST['submit'])) {
 		generate_admin_menu( $plugin );
 		//no query error
 		message('No Query Duh!');
+	}
+
+	// SECURITY: Block dangerous SQL operations
+	$dangerous_patterns = array(
+		'/\bDROP\s+DATABASE\b/i' => 'DROP DATABASE',
+		'/\bDROP\s+TABLE\s+.*users/i' => 'DROP TABLE users',
+		'/\bDROP\s+TABLE\s+.*config/i' => 'DROP TABLE config',
+		'/\bGRANT\b/i' => 'GRANT',
+		'/\bREVOKE\b/i' => 'REVOKE',
+		'/\bCREATE\s+USER\b/i' => 'CREATE USER',
+		'/\bALTER\s+USER\b/i' => 'ALTER USER',
+		'/\bLOAD_FILE\b/i' => 'LOAD_FILE',
+		'/\bINTO\s+OUTFILE\b/i' => 'INTO OUTFILE',
+		'/\bINTO\s+DUMPFILE\b/i' => 'INTO DUMPFILE',
+	);
+
+	foreach ($dangerous_patterns as $pattern => $operation) {
+		if (preg_match($pattern, $this_query)) {
+			generate_admin_menu($plugin);
+			message('Security: The query contains a dangerous operation ('.$operation.'). For these operations, please use phpMyAdmin or database command line tools.');
+		}
+	}
+
+	// Log all SQL queries for audit trail
+	if (isset($pun_user['username'])) {
+		error_log('[DB_MANAGEMENT_PLUGIN] Admin "'.$pun_user['username'].'" executed: '.substr($this_query, 0, 200));
 	}
 	// Add a semi-colon to the end if there isn't one:
 	if ((!strrpos($this_query, ";")) || (substr($this_query, -1) != ';'))
@@ -733,7 +778,7 @@ elseif (isset($_POST['submit'])) {
 			// Remember the number of fields (aka columns) and the number of rows:
 			$field_count = num_fields($result);
 			$row_count = $db->num_rows($result);
-			echo '<div><div class="linkst"><div class="inbox"><div><a href="javascript:history.go(-1)" />Go back</a></div></div></div>';
+			echo '<div><div class="linkst"><div class="inbox"><div><a href="admin_loader.php?plugin=AP_DB_management.php">Go back</a></div></div></div>';
 			echo '<div class="blocktable"><h2 class="block2"><span>';
 			echo pun_htmlspecialchars($query);
 			echo '</span></h2><div class="box"><div class="inbox"><div class="scrollbox" style="max-height: 500px"><table cellspacing="0"><thead><tr>';
@@ -762,7 +807,7 @@ elseif (isset($_POST['submit'])) {
 			echo '</tbody></table></div></div></div></div>';
 		}
 		elseif (substr(trim($query), 0, 6) == 'SELECT') {
-			echo '<div><div class="linkst"><div class="inbox"><div><a href="javascript:history.go(-1)" />Go back</a></div></div></div>';
+			echo '<div><div class="linkst"><div class="inbox"><div><a href="admin_loader.php?plugin=AP_DB_management.php">Go back</a></div></div></div>';
 			echo '<div class="block"><h2 class="block2"><span>'.pun_htmlspecialchars($query).'</span></h2><div class="box"><div class="inbox"><p>';
 			echo "No data found";
 			echo '</p></div></div></div>';
@@ -772,7 +817,7 @@ elseif (isset($_POST['submit'])) {
 	echo '<div class="block"><h2 class="block2"><span>Queries Done</span></h2><div class="box"><div class="inbox"><p>';
 	echo nl2br(pun_htmlspecialchars($queriesdone));
 	echo '</p></div></div></div>';
-	echo '<div><div class="linkst"><div class="inbox"><div><a href="javascript:history.go(-1)" />Go back</a></div></div></div>';
+	echo '<div><div class="linkst"><div class="inbox"><div><a href="admin_loader.php?plugin=AP_DB_management.php">Go back</a></div></div></div>';
 }
 else {
 generate_admin_menu($plugin);
@@ -788,7 +833,7 @@ generate_admin_menu($plugin);
 	<div class="blockform">
 		<h2 class="block2"><span>Backup/Restore</span></h2>
 		<div class="box">
-			<form method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
+			<form method="post" action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
 				<div class="inform">
 					<fieldset>
 						<legend>Backup options</legend>
@@ -856,7 +901,7 @@ else {
 				</div>
 			<p class="submittop"><input type="submit" name="backupstart" value="Start backup" class="mainoption" /></p>
 			</form>
-			<form enctype="multipart/form-data" method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
+			<form enctype="multipart/form-data" method="post" action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
 				<div class="inform">
 					<fieldset>
 						<legend>Restore options</legend>
@@ -876,7 +921,7 @@ else {
 		</div>
 		<h2 class="block2"><span>Additional options</span></h2>
 		<div class="box">
-			<form action="<?php echo $_SERVER['REQUEST_URI'] ?>" method="post">
+			<form action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>" method="post">
 				<div class="inform">
 					<fieldset>
 						<legend>Run SQL query</legend>

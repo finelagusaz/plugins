@@ -17,6 +17,12 @@ define('PUN_PLUGIN_LOADED', 1);
 // If the "Run Merge" button was clicked
 if (isset($_POST['run_merge']))
 {
+	// Basic CSRF protection via referer check
+	$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+	if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+		generate_admin_menu($plugin);
+		message('Security: Invalid form submission. Please submit the form from the admin panel.');
+	}
 	// Get the variables
 	$forum1 = intval($_POST['forum1']);
 	$forum2 = intval($_POST['forum2']);
@@ -103,7 +109,7 @@ else	// If not, we show the "Show text" form
 	<div class="blockform">
 		<h2 class="block2"><span>Merge Forums</span></h2>
 		<div class="box">
-			<form id="merge" method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
+			<form id="merge" method="post" action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
 				<div class="inform">
 					<fieldset>
 						<legend>Select the forum you want and the one you want to merge to.</legend>

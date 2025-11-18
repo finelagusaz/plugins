@@ -20,11 +20,27 @@ define('PLUGIN_VERSION',1.0);
 
 if (isset($_POST['cleanup']))
 {
+    // Basic CSRF protection via referer check
+    $referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+    if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+        generate_admin_menu($plugin);
+        message('Security: Invalid form submission. Please submit the form from the admin panel.');
+    }
     //delete all users and posts from specified ips, then perform all other cleanup tasks except resetting post counts since that might not be needed or wanted.
     @set_time_limit(0);
-    $ip = "'".implode("','", array_values(explode(' ', $_POST['ip_addys'])))."'";
-    $db->query('DELETE FROM '.$db->prefix.'posts WHERE poster_ip IN('.$ip.')') or error('Could not delete posts', __FILE__, __LINE__, $db->error());
-    $db->query('DELETE FROM '.$db->prefix.'users WHERE registration_ip IN('.$ip.')') or error('Could not delete users', __FILE__, __LINE__, $db->error());
+    $ip_addrs = explode(' ', trim($_POST['ip_addys']));
+    $escaped_ips = array();
+    foreach ($ip_addrs as $ip) {
+        $ip = trim($ip);
+        if (filter_var($ip, FILTER_VALIDATE_IP) || preg_match('/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/', $ip)) {
+            $escaped_ips[] = "'".$db->escape($ip)."'";
+        }
+    }
+    if (!empty($escaped_ips)) {
+        $ip = implode(',', $escaped_ips);
+        $db->query('DELETE FROM '.$db->prefix.'posts WHERE poster_ip IN('.$ip.')') or error('Could not delete posts', __FILE__, __LINE__, $db->error());
+        $db->query('DELETE FROM '.$db->prefix.'users WHERE registration_ip IN('.$ip.')') or error('Could not delete users', __FILE__, __LINE__, $db->error());
+    }
     $db->query('CREATE TEMPORARY TABLE IF NOT EXISTS '.$db->prefix.'forum_posts SELECT t.forum_id, count(*) as posts FROM '.$db->prefix.'posts as p LEFT JOIN '.$db->prefix.'topics as t on p.topic_id=t.id GROUP BY t.forum_id') or error('Creating posts table failed', __FILE__, __LINE__, $db->error());
     $db->query('UPDATE '.$db->prefix.'forums, '.$db->prefix.'forum_posts SET num_posts=posts WHERE id=forum_id') or error('Could not update post counts', __FILE__, __LINE__, $db->error());
     $db->query('CREATE TEMPORARY TABLE IF NOT EXISTS '.$db->prefix.'forum_topics SELECT forum_id, count(*) as topics FROM '.$db->prefix.'topics GROUP BY forum_id') or error('Creating topics table failed', __FILE__, __LINE__, $db->error());
@@ -47,6 +63,12 @@ if (isset($_POST['cleanup']))
 }
 if (isset($_POST['forum_post_sync']))
 {
+    // Basic CSRF protection via referer check
+    $referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+    if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+        generate_admin_menu($plugin);
+        message('Security: Invalid form submission. Please submit the form from the admin panel.');
+    }
     // synchronise forum posts
     $db->query('CREATE TEMPORARY TABLE IF NOT EXISTS '.$db->prefix.'forum_posts SELECT t.forum_id, count(*) as posts FROM '.$db->prefix.'posts as p LEFT JOIN '.$db->prefix.'topics as t on p.topic_id=t.id GROUP BY t.forum_id') or error('Creating posts table failed', __FILE__, __LINE__, $db->error());
     $db->query('UPDATE '.$db->prefix.'forums, '.$db->prefix.'forum_posts SET num_posts=posts WHERE id=forum_id') or error('Could not update post counts', __FILE__, __LINE__, $db->error());
@@ -56,6 +78,12 @@ if (isset($_POST['forum_post_sync']))
 }
 elseif (isset($_POST['topic_post_sync']))
 {
+    // Basic CSRF protection via referer check
+    $referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+    if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+        generate_admin_menu($plugin);
+        message('Security: Invalid form submission. Please submit the form from the admin panel.');
+    }
     // synchronise topic posts
     $db->query('CREATE TEMPORARY TABLE IF NOT EXISTS '.$db->prefix.'topic_posts SELECT topic_id, count(*)-1 as replies FROM '.$db->prefix.'posts GROUP BY topic_id') or error('Creating topics table failed', __FILE__, __LINE__, $db->error());
     $db->query('UPDATE '.$db->prefix.'topics, '.$db->prefix.'topic_posts SET num_replies=replies WHERE id=topic_id') or error('Could not update topic counts', __FILE__, __LINE__, $db->error());
@@ -63,6 +91,12 @@ elseif (isset($_POST['topic_post_sync']))
 }
 elseif (isset($_POST['user_post_sync']))
 {
+    // Basic CSRF protection via referer check
+    $referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+    if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+        generate_admin_menu($plugin);
+        message('Security: Invalid form submission. Please submit the form from the admin panel.');
+    }
     // synchronise user posts
     $db->query('CREATE TEMPORARY TABLE IF NOT EXISTS '.$db->prefix.'user_posts SELECT poster_id, count(*)as posts FROM '.$db->prefix.'posts GROUP BY poster_id') or error('Creating posts table failed', __FILE__, __LINE__, $db->error());
     $db->query('UPDATE '.$db->prefix.'users, '.$db->prefix.'user_posts SET num_posts=posts WHERE id=poster_id') or error('Could not update post counts', __FILE__, __LINE__, $db->error());
@@ -70,6 +104,12 @@ elseif (isset($_POST['user_post_sync']))
 }
 elseif (isset($_POST['forum_last_post']))
 {
+    // Basic CSRF protection via referer check
+    $referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+    if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+        generate_admin_menu($plugin);
+        message('Security: Invalid form submission. Please submit the form from the admin panel.');
+    }
     // synchronise forum last posts
     $db->query('CREATE TEMPORARY TABLE IF NOT EXISTS '.$db->prefix.'forum_last SELECT p.posted AS n_last_post, p.id AS n_last_post_id, p.poster AS n_last_poster, t.forum_id FROM '.$db->prefix.'posts AS p LEFT JOIN '.$db->prefix.'topics AS t ON p.topic_id=t.id ORDER BY p.posted DESC') or error('Creating last posts table failed', __FILE__, __LINE__, $db->error());
     $db->query('CREATE TEMPORARY TABLE IF NOT EXISTS '.$db->prefix.'forum_lastb SELECT * FROM '.$db->prefix.'forum_last WHERE forum_id > 0 GROUP BY forum_id') or error('Creating last posts tableb failed', __FILE__, __LINE__, $db->error());
@@ -78,6 +118,12 @@ elseif (isset($_POST['forum_last_post']))
 }
 elseif (isset($_POST['topic_last_post']))
 {
+    // Basic CSRF protection via referer check
+    $referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+    if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+        generate_admin_menu($plugin);
+        message('Security: Invalid form submission. Please submit the form from the admin panel.');
+    }
     // synchronise topic last posts
     $db->query('CREATE TEMPORARY TABLE IF NOT EXISTS '.$db->prefix.'topic_last SELECT posted AS n_last_post, id AS n_last_post_id, poster AS n_last_poster, topic_id FROM '.$db->prefix.'posts ORDER BY posted DESC') or error('Creating last posts table failed', __FILE__, __LINE__, $db->error());
     $db->query('CREATE TEMPORARY TABLE IF NOT EXISTS '.$db->prefix.'topic_lastb SELECT * FROM '.$db->prefix.'topic_last WHERE topic_id > 0 GROUP BY topic_id') or error('Creating last posts tableb failed', __FILE__, __LINE__, $db->error());
@@ -86,6 +132,12 @@ elseif (isset($_POST['topic_last_post']))
 }
 elseif (isset($_POST['delete_orphans']))
 {
+    // Basic CSRF protection via referer check
+    $referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+    if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+        generate_admin_menu($plugin);
+        message('Security: Invalid form submission. Please submit the form from the admin panel.');
+    }
     // Clear orphans
     $db->query('CREATE TEMPORARY TABLE IF NOT EXISTS '.$db->prefix.'orph_topic SELECT t.id as o_id FROM '.$db->prefix.'topics AS t LEFT JOIN '.$db->prefix.'posts AS p ON p.topic_id = t.id WHERE p.id IS NULL') or error('Creating orphaned topics table failed', __FILE__, __LINE__, $db->error());
     $db->query('DELETE '.$db->prefix.'topics FROM '.$db->prefix.'topics, '.$db->prefix.'orph_topic WHERE o_id=id') or error('Could not delete topics', __FILE__, __LINE__, $db->error());
@@ -112,7 +164,7 @@ else
     </div>
     <h2 class="block2"><span>Complete spam cleanup</span></h2>
     <div class="box">
-        <form method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
+        <form method="post" action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
             <div class="inform">
                 <fieldset>
                     <legend>Complete spam cleanup</legend>
@@ -140,7 +192,7 @@ else
     </div>
     <h2 class="block2"><span>Synchronise forum post/topic counts</span></h2>
     <div class="box">
-        <form method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
+        <form method="post" action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
             <div class="inform">
                 <fieldset>
                     <legend>Synchronise forum post/topic counts</legend>
@@ -160,7 +212,7 @@ else
     </div>
     <h2 class="block2"><span>Synchronise topic reply counts</span></h2>
     <div class="box">
-        <form method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
+        <form method="post" action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
             <div class="inform">
                 <fieldset>
                     <legend>Synchronise topic reply counts</legend>
@@ -180,7 +232,7 @@ else
     </div>
     <h2 class="block2"><span>Synchronise user post counts</span></h2>
     <div class="box">
-        <form method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
+        <form method="post" action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
             <div class="inform">
                 <fieldset>
                     <legend>Synchronise user post counts</legend>
@@ -200,7 +252,7 @@ else
     </div>
     <h2 class="block2"><span>Synchronise forum last post</span></h2>
     <div class="box">
-        <form method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
+        <form method="post" action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
             <div class="inform">
                 <fieldset>
                     <legend>Synchronise forum last post</legend>
@@ -220,7 +272,7 @@ else
     </div>
     <h2 class="block2"><span>Synchronise topic last post</span></h2>
     <div class="box">
-        <form method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
+        <form method="post" action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
             <div class="inform">
                 <fieldset>
                     <legend>Synchronise topic last post</legend>
@@ -240,7 +292,7 @@ else
     </div>
     <h2 class="block2"><span>Delete orphans</span></h2>
     <div class="box">
-        <form method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
+        <form method="post" action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
             <div class="inform">
                 <fieldset>
                     <legend>Delete orphans</legend>

@@ -81,6 +81,12 @@ function escape_keyword($str)
 
 if (isset($_POST['make_backup']))
 {
+	// Basic CSRF protection via referer check
+	$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+	if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+		generate_admin_menu($plugin);
+		message('Security: Invalid form submission. Please submit the form from the admin panel.');
+	}
 	// Make sure something something was entered
 	if (!isset($_POST['method']) || ($_POST['method'] != 'download' && $_POST['method'] != 'filesystem' && $_POST['method'] != 'ftp'))
 		message($lang_common['Bad request']);
@@ -178,6 +184,30 @@ if (isset($_POST['make_backup']))
 			$dir = isset($_POST['dir']) ? trim($_POST['dir']) : false;
 			if (!$dir)
 				message($lang_admin_plugin_backup['No directory']);
+
+			// Normalize and validate path to prevent directory traversal
+			$dir = realpath($dir);
+
+			// Prevent directory traversal outside forum root
+			$pun_root_real = realpath(PUN_ROOT);
+			if ($dir === false || strpos($dir, $pun_root_real) !== 0) {
+				generate_admin_menu($plugin);
+				message('Security: Backup directory must be within the forum installation path.');
+			}
+
+			// Prevent writing to sensitive system directories
+			$forbidden_dirs = array(
+				realpath(PUN_ROOT.'include'),
+				realpath(PUN_ROOT.'lang'),
+				realpath(PUN_ROOT.'plugins'),
+			);
+
+			foreach ($forbidden_dirs as $forbidden) {
+				if ($forbidden !== false && ($dir === $forbidden || strpos($dir, $forbidden.DIRECTORY_SEPARATOR) === 0)) {
+					generate_admin_menu($plugin);
+					message('Security: Cannot write backups to system directories.');
+				}
+			}
 
 			if (!is_dir($dir) || !is_writable($dir) || !rename(FORUM_CACHE_DIR.$filename, $dir.'/'.$filename))
 				message($lang_admin_plugin_backup['Unable to write']);

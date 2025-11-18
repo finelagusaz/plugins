@@ -32,15 +32,27 @@ function RoundSigDigs($number, $sigdigs) {
 
 if (isset($_POST['lang']))
 {
+	// Basic CSRF protection via referer check
+	$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+	if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+		generate_admin_menu($plugin);
+		message('Security: Invalid form submission. Please submit the form from the admin panel.');
+	}
 	// Do Post
-	$db->query('UPDATE '.$db->prefix.'users SET language=\''.$_POST['form']['language'].'\' WHERE id>1') or error('Unable to set lang settings', __FILE__, __LINE__, $db->error());
-	redirect($_SERVER['REQUEST_URI'], 'Languages Reset');
+	$db->query('UPDATE '.$db->prefix.'users SET language=\''.$db->escape($_POST['form']['language']).'\' WHERE id>1') or error('Unable to set lang settings', __FILE__, __LINE__, $db->error());
+	redirect('admin_loader.php?plugin=AP_Languages_and_styles.php', 'Languages Reset');
 }
 elseif (isset($_POST['style']))
 {
+	// Basic CSRF protection via referer check
+	$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+	if (empty($referer) || strpos($referer, 'admin_loader.php') === false) {
+		generate_admin_menu($plugin);
+		message('Security: Invalid form submission. Please submit the form from the admin panel.');
+	}
 	// Do Post
-	$db->query('UPDATE '.$db->prefix.'users SET style=\''.$_POST['form']['style'].'\' WHERE id>1') or error('Unable to set style settings', __FILE__, __LINE__, $db->error());
-	redirect($_SERVER['REQUEST_URI'], 'Styles Reset');
+	$db->query('UPDATE '.$db->prefix.'users SET style=\''.$db->escape($_POST['form']['style']).'\' WHERE id>1') or error('Unable to set style settings', __FILE__, __LINE__, $db->error());
+	redirect('admin_loader.php?plugin=AP_Languages_and_styles.php', 'Styles Reset');
 }
 else	// If not, we show the form
 {
@@ -59,7 +71,7 @@ else	// If not, we show the form
 	<div class="blockform">
 		<h2 class="block2"><span>Languages</span></h2>
 		<div class="box">
-			<form id="lang" method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
+			<form id="lang" method="post" action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
 				<div class="inform">
 					<fieldset>
 						<legend>Languages</legend>
@@ -95,9 +107,9 @@ else	// If not, we show the form
 									<select name="form[language]">
 <?php
 
-		while (list(, $temp) = @each($languages))
+		foreach($languages as $temp)
 		{
-				echo "\t\t\t\t\t\t\t\t".'<option value="'.$temp.'">'.$temp.'</option>'."\n";
+				echo "\t\t\t\t\t\t\t\t".'<option value="'.pun_htmlspecialchars($temp).'">'.pun_htmlspecialchars($temp).'</option>'."\n";
 		}
 
 ?>
@@ -116,7 +128,7 @@ else	// If not, we show the form
 	<div class="blockform">
 		<h2 class="block2"><span>Styles</span></h2>
 		<div class="box">
-			<form id="style" method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
+			<form id="style" method="post" action="<?php echo pun_htmlspecialchars($_SERVER['REQUEST_URI']) ?>">
 				<div class="inform">
 					<fieldset>
 						<legend>Styles</legend>
@@ -153,9 +165,9 @@ else	// If not, we show the form
 									<select name="form[style]">
 <?php
 
-		while (list(, $temp) = @each($styles))
+		foreach($styles as $temp)
 		{
-			echo "\t\t\t\t\t\t\t\t".'<option value="'.$temp.'">'.str_replace('_', ' ', $temp).'</option>'."\n";
+			echo "\t\t\t\t\t\t\t\t".'<option value="'.pun_htmlspecialchars($temp).'">'.pun_htmlspecialchars(str_replace('_', ' ', $temp)).'</option>'."\n";
 		}
 
 ?>
